@@ -1,6 +1,16 @@
-# Wayfront MCP Skills
+# Wayfront Skills
 
-AI skill files for the [Wayfront](https://wayfront.com) MCP server. These teach AI models (Claude, ChatGPT, OpenClaw, Cursor, etc.) how to discover and use Wayfront MCP tools without prior knowledge.
+AI skill files for working with [Wayfront](https://wayfront.com). These teach AI models (Claude, ChatGPT, OpenClaw, Cursor, etc.) how to use a Wayfront workspace — across the **MCP server**, the **CLI / REST API**, **templates**, and **services** — without prior knowledge.
+
+This is one installable skill (`wayfront`) using progressive disclosure: `SKILL.md` is the hub, and `reference/` holds a self-contained doc per surface.
+
+```
+SKILL.md                  ← entry point: what Wayfront is, the 3 surfaces, data model
+reference/mcp.md          ← MCP server: connect, tools, Purity filters, workflows
+reference/cli.md          ← CLI: install, auth, resource commands, raw API
+reference/templates.md    ← portal/email Twig templates: pull/push/reset, naming
+reference/services.md     ← the product catalogue: fields, billing, setup
+```
 
 ## Install via ClawHub
 
@@ -8,7 +18,7 @@ AI skill files for the [Wayfront](https://wayfront.com) MCP server. These teach 
 clawhub install wayfront
 ```
 
-## Connection Setup
+## MCP Connection Setup
 
 Wayfront's MCP server supports OAuth 2.1 with dynamic client registration — clients that support MCP OAuth (like Claude Code and Claude Desktop) handle authentication automatically. You just need your workspace URL.
 
@@ -35,3 +45,12 @@ Any MCP client that supports Streamable HTTP + OAuth can connect:
 - **Endpoint:** `https://[WORKSPACE].wayfront.com/mcp`
 - **Transport:** Streamable HTTP
 - **Auth:** OAuth 2.1 (discovery via `/.well-known/oauth-authorization-server`)
+
+## CLI Setup
+
+```bash
+npm install -g wayfront        # or run ad-hoc with: npx wayfront
+wayfront auth login [WORKSPACE]
+```
+
+See [`reference/cli.md`](reference/cli.md) for resource commands, the raw API escape hatch, and the template workflow.
