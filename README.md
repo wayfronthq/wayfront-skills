@@ -1,37 +1,48 @@
-# Wayfront MCP Skills
+# Wayfront Skills
 
-AI skill files for the [Wayfront](https://wayfront.com) MCP server. These teach AI models (Claude, ChatGPT, OpenClaw, Cursor, etc.) how to discover and use Wayfront MCP tools without prior knowledge.
+[Wayfront](https://wayfront.com) is the AI-ready operating system for productized agencies: client billing, onboarding, and project delivery in one platform instead of five.
 
-## Install via ClawHub
+These agent skill files teach AI tools (Claude Code, Claude Desktop, Cursor, and anything MCP- or skill-aware) how to drive a Wayfront workspace through its developer platform: the **MCP server**, the **CLI / REST API**, **templates**, and **service workflows**. No prior knowledge needed.
 
-```bash
-clawhub install wayfront
+One skill (`wayfront`) with progressive disclosure: `SKILL.md` is the hub, and `reference/` holds a self-contained doc per surface.
+
+```
+SKILL.md                  ← entry point: what Wayfront is, surfaces, data model
+reference/mcp.md          ← MCP server: connect, tools, filters, workflows
+reference/cli.md          ← CLI: install, auth, resource commands, API operations
+reference/templates.md    ← portal/email Twig templates: pull/push/reset, naming
+reference/workflows.md    ← how services, forms, orders & billing fit together (+ setup)
+reference/features.md     ← full feature map: billing, support, portal, integrations, more
 ```
 
-## Connection Setup
+## Install the skill
 
-Wayfront's MCP server supports OAuth 2.1 with dynamic client registration — clients that support MCP OAuth (like Claude Code and Claude Desktop) handle authentication automatically. You just need your workspace URL.
+Drop this folder into your agent's skills directory so the agent loads `SKILL.md` automatically.
 
-> Replace `[WORKSPACE]` below with your Wayfront workspace name — for example, if you log in at `acme.wayfront.com`, your workspace is `acme`.
+**Claude Code / Claude Desktop**
+```bash
+# project-scoped (this repo only)
+git clone https://github.com/wayfronthq/wayfront-skills .claude/skills/wayfront
 
-### Claude Code
+# or user-scoped (all projects)
+git clone https://github.com/wayfronthq/wayfront-skills ~/.claude/skills/wayfront
+```
 
+Other skill-aware tools: place the folder wherever that tool discovers skills (it just needs `SKILL.md` at the root). You can also point an agent straight at the raw files in this repo.
+
+## Connect to your workspace
+
+> Replace `[WORKSPACE]` with your workspace name. If you log in at `acme.wayfront.com`, your workspace is `acme`.
+
+**MCP (Claude Code):**
 ```bash
 claude mcp add --transport http wayfront https://[WORKSPACE].wayfront.com/mcp
 ```
+The browser opens to authorize on first use. Claude Desktop and other MCP clients: see [`reference/mcp.md`](reference/mcp.md).
 
-Claude Code will open your browser to authorize when you first use a Wayfront tool.
-
-### Claude Desktop
-
-1. Open **Settings → MCP Servers → Add**
-2. Enter `https://[WORKSPACE].wayfront.com/mcp` as the server URL
-3. You'll be prompted to authorize in your browser
-
-### Other MCP Clients
-
-Any MCP client that supports Streamable HTTP + OAuth can connect:
-
-- **Endpoint:** `https://[WORKSPACE].wayfront.com/mcp`
-- **Transport:** Streamable HTTP
-- **Auth:** OAuth 2.1 (discovery via `/.well-known/oauth-authorization-server`)
+**CLI:**
+```bash
+npm install -g wayfront        # or run ad-hoc with: npx wayfront
+wayfront auth login [WORKSPACE]
+```
+Resource commands, generated API operations, and the template workflow: [`reference/cli.md`](reference/cli.md).
