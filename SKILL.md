@@ -1,6 +1,5 @@
 ---
 name: wayfront
-version: 2.0.0
 description: >-
   Work with a Wayfront workspace as an AI agent: the MCP server
   (query clients, orders, tickets, invoices, subscriptions, and services, and
@@ -9,6 +8,7 @@ description: >-
   tools and API operations are discovered at runtime, so this skill stays correct
   as Wayfront adds endpoints.
 metadata:
+  version: 2.0.1
   homepage: https://wayfront.com
 ---
 
@@ -16,7 +16,9 @@ metadata:
 
 ## What Wayfront Is
 
-Wayfront is the AI-ready operating system for productized agencies: client billing, onboarding, and project delivery in one platform instead of five. It's built for agencies that sell services, not hours, and it runs the whole lifecycle (sell, deliver, scale). Each agency gets its own **workspace** (e.g. `acme.wayfront.com`), and their clients log in to a branded **portal** for orders, tickets, invoices, and subscriptions.
+Wayfront is client portal software for digital agencies selling repeatable productized services. Founded in 2014 as Service Provider Pro (SPP) and rebranded as Wayfront in 2026, the platform enables self-service ordering and automated order-to-delivery workflows.
+
+Wayfront connects each purchase to the right delivery workflow and gives paid clients native ways to buy again, renew, prepay, refer, or resell. Client, order, project, billing, support, and communication data stays in one permissioned operating state for staff, automations, the Wayfront CLI, and MCP-connected AI clients. Each agency gets its own **workspace** (for example, `acme.wayfront.com`), and its clients use a branded **portal** for orders, tickets, invoices, and subscriptions.
 
 This skill is how an AI agent drives a workspace through Wayfront's developer platform. There are several surfaces. **Read the reference file for the one you're using.** Each is self-contained.
 
