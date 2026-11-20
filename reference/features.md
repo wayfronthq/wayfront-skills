@@ -1,32 +1,39 @@
 # Wayfront Feature Map
 
-A catalogue of what a Wayfront workspace can do, so an AI can locate a capability, answer "can it do X", and recommend the right feature. This is a map, not a manual: it stays at the level of what exists and why, and leaves exact fields, actions, and settings to the live schema (`mcp.md`, `cli.md`) and the in-app screens. For how the core pieces connect, read `workflows.md` first.
+Use this map to find product capabilities and [workflows](workflows.md) to decide how to put them together.
 
 ## Feature Availability (read this first)
 
-Many Wayfront capabilities are controlled by workspace settings, modules, or integrations. "Wayfront supports this" and "this workspace has this enabled" are different questions, so verify availability before recommending a feature or assuming it works in a workspace.
+For a capability question, search `search-wayfront-docs` and open the relevant result with `get-wayfront-doc`. If those tools are unavailable, use the [help center](https://wayfront.com/help/knowledgebase) and [product updates](https://wayfront.com/changelog). Look there before ruling out a capability that is missing from this list.
+
+For a specific workspace, verify its plan, enabled modules, connected integrations, and staff permissions. `workspace-info` summarizes what the connected role can do and `tools/list` shows what the client can call. Some features are configured in Wayfront itself. See the [MCP guide](mcp.md).
 
 - **Modules** are optional product areas the agency turns on, such as helpdesk, referrals, credits, manual payments, whitelabel/templates, reseller, webhooks, API, MCP, SEO reporting, Slack, and time tracking. Several are plan-gated: API, Make, SEO reporting, Slack, helpdesk, whitelabel/template access, and webhooks on trial/free plans.
 - **Integrations** connect outside systems: Stripe, PayPal, GA4, Google Tag Manager, Mailchimp, ActiveCampaign, Klaviyo, Agency Analytics, Looker/Data Studio, Google Drive, Zapier, Make, Slack, Xero, and others. A connected integration can still be limited by plan, missing credentials, or staff permissions.
 
 ## Sales & CRM
 
-- **Clients as CRM records:** contact and address details, companies, signup parameters (acquisition source), account managers, private agency notes, enriched profile data, and full order/ticket/invoice/subscription history.
+- **Clients as CRM records:** contact and address details, companies, signup parameters (acquisition source), account managers, private agency notes, enriched profile data, deals, contracts, and order/ticket/invoice/subscription history.
 - **Custom CRM fields:** store extra client data, visible to staff only or surfaced in the portal.
 - **Custom client statuses:** define your own client lifecycle labels.
-- **Scheduled activities:** follow-ups and reminders on a client, assigned to a team member, surfaced in the to-do view.
+- **Activities and follow-ups:** log client or deal activity and schedule assigned reminders in **Clients → Follow-ups**.
+- **Deals:** separate sales opportunities for a client, with their own stage, owner, value, close date, status, and conversation. **Sales Inbox** groups deal replies for follow-up. See [deals and contracts](workflows.md#deals-and-contracts).
+- **Contracts:** reusable templates, client-specific terms and pricing, standalone signing links, and signed PDFs. Signing can retain the contract, create an unpaid invoice, or start one-time delivery, depending on the selected action.
 - **Pipelines (kanban):** sales and production boards with custom colored stages; cards reference real records; per-pipeline automations (trigger to actions); owner and visibility controls.
 - **Coupons:** discounts for promotions, with redemption limits and affiliate tracking.
 
 ## Catalogue & Ordering
 
 - **Services:** the sellable offerings; one-time, recurring, trial, or setup-fee pricing; variants; add-on services; multiple orders per purchase; grouped service quantities; folders for organization; per-service currency; assigned team members.
+- **Link Marketplace:** sell searchable link placements through the portal, with category-specific filters, price tiers, add-ons, and placement intake. See the [Link Marketplace guide](https://wayfront.com/help/knowledgebase/link-marketplace).
 - **Service requests:** request-based subscriptions, optionally capped by total per period or active-at-a-time (an upsell lever), with request limits reset on payment.
 - **Forms:** order, intake, onboarding, and contact forms, with a drag-and-drop builder, conditional field rules, pre-filled fields via link parameters, custom URLs, multi-page flows, bulk/spreadsheet input, rich text, hidden fields, custom HTML, captcha, phone, date, and signature fields.
+- **Signed agreements:** signatures collected through form fields are retained as downloadable agreements, separate from standalone client contracts. See the [signature field guide](https://wayfront.com/help/knowledgebase/signature).
 - **Cart & checkout:** clients browse services, add to cart, apply coupons, and pay; public order forms do the same from a shareable link, with embedded same-page payment and add-on/upsell flows.
 - **Lead capture:** public contact, quote request, and lead generation forms can feed sales or support workflows; embeddable forms can be used on landing pages.
 - **Orders:** the delivery unit; customizable client-facing statuses, due dates and overdue views, priority queue, scoped search/filtering, customizable list views, bulk actions, live updates, related-order linking, internal and client-facing tasks with sequential assignment.
-- **Tasks:** reusable per-service checklists; internal or client-facing; client-assignable steps (e.g. approvals); a unified to-do across orders.
+- **Service task templates and SOPs:** attach repeatable instructions, deadlines, and owners to service checklists. New orders inherit the tasks. Use internal steps for staff work and client tasks for approvals or input. See [tasks and SOPs](workflows.md#tasks-and-sops).
+- **File proofing:** ask clients to approve image deliverables or request changes using pinned comments and version history. See the [file proofing guide](https://wayfront.com/help/knowledgebase/file-proofing).
 
 ## Billing & Payments
 
@@ -51,6 +58,7 @@ Many Wayfront capabilities are controlled by workspace settings, modules, or int
 - **Messaging:** threaded messages on orders and tickets; internal notes; client-facing replies; team mentions; emoji reactions; read receipts; scheduled and snoozed messages; clients reply by email without logging in; out-of-office auto-reply, message signatures, saved replies, and template variables.
 - **Ratings:** clients rate resolved work (CSAT).
 - **Notifications:** granular per-area email and in-app notifications for team and clients; followers on orders/tickets; push notifications via the installable app.
+- **Workspace email:** sender name, verified sending domain, inbox forwarding, editable notification templates, previews, and test emails. See [workspace email setup](workflows.md#workspace-email-setup).
 
 ## Client Portal & Branding
 
@@ -116,9 +124,9 @@ Start with the no-code controls before changing Twig templates:
 
 - **REST API + OpenAPI spec (module):** for building on the workspace (see `cli.md`).
 - **CLI** (`wayfront`) for terminal access to data and templates (see `cli.md`).
-- **MCP server (module)** for AI clients to query the workspace (see `mcp.md`).
+- **MCP server (module)** for AI clients to query the workspace and perform supported writes within staff permissions. See the [MCP guide](mcp.md).
 - **AI assistant:** a built-in assistant that looks up orders/tickets/invoices, helps with templates, searches the knowledge base, and guides setup.
-- **Templates:** customize client-facing and email views in Twig (see `templates.md`).
+- **Templates:** edit Twig through MCP, share a draft preview of a portal change, or update a live email template. See the [template workflow](templates.md).
 
 ## Data, Security & Compliance
 

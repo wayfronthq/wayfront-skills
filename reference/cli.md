@@ -1,6 +1,6 @@
 # Wayfront CLI
 
-Drive a workspace from the terminal: resource-first commands, template sync, and generated OpenAPI REST operations. Repo: `wayfronthq/wayfront-cli`. Requires Node.js 18+.
+Use the [Wayfront CLI](https://github.com/wayfronthq/wayfront-cli) for resource commands, template sync, and generated OpenAPI operations. The published package requires Node.js 20 or later.
 
 ## Install
 
@@ -26,7 +26,11 @@ wayfront workspace use acme
 
 Running bare `wayfront` prints connection status and help.
 
-### Config & auth internals
+### Authenticate without a browser
+
+Use `wayfront auth token acme` to save an API token interactively. In CI, supply the token from the secret store through `WAYFRONT_TOKEN` and set `WAYFRONT_WORKSPACE` to the intended workspace name, domain, or URL. The environment token takes precedence over saved credentials. Verify `WAYFRONT_WORKSPACE` before making changes because `wayfront auth status` reports the saved configuration.
+
+### Saved configuration
 - Config file: `~/.config/wayfront/config.json` (override the dir with `WAYFRONT_CLI_CONFIG_DIR`). Holds the `default` workspace plus per-workspace `{ url, auth }`.
 - Two auth types: `oauth` (browser session) and `token` (static). The base path differs: OAuth requests hit `/oauth-api/*`, token requests hit `/api/*`.
 - Workspace URL defaults to `https://<workspace>.wayfront.com` unless an explicit `url` is stored (supports self-hosted and custom domains).
@@ -50,14 +54,13 @@ Examples (verify against `--help` for your workspace):
 wayfront orders list
 wayfront orders list page=2
 wayfront orders get <order-number>
-wayfront services create --json '{ ... }'
-wayfront clients create --json '{"email":"jane@example.com","name":"Jane"}'
+wayfront services list
 ```
 
 ### Conventions
 - **Path params are positional**, query params are `key=value` (repeat a key for arrays), request bodies use `--json '<json>'`. Without `--json`, `key=value` pairs become query params (or the body for endpoints that take one).
 - **Identifiers:** most resources use a numeric `id`. **Orders and tickets use their string `number`** (the route key), not the numeric id. Nested resources take the parent's route key (the order or ticket number, or the client id for client activities).
-- **Status is a numeric code, not a label.** Read the codes from the MCP tool schema (see `mcp.md`) or by inspecting `list` output. They are workspace-specific for orders, tickets, and clients.
+- Check the CLI help or the OpenAPI schema for the status field's accepted type and values. Order, ticket, and client statuses can vary by workspace.
 - Run `wayfront <resource> --help` whenever you're unsure.
 
 ## Generated API Operations
@@ -70,11 +73,15 @@ wayfront api list Orders          # filter by OpenAPI tag
 wayfront api call <operationId> [key=value...] --json '<body>'
 ```
 
-`api call` maps `key=value` args to path and query params (path params fill `{placeholders}`, the rest become query) and sends `--json` as the body. Discover the `operationId` with `api list`, then call it. Prefer dedicated operations over generic record updates where they exist (some legacy catch-all update routes are slated for removal).
+`api call` maps `key=value` args to path and query params (path params fill `{placeholders}`, the rest become query) and sends `--json` as the body. Discover the `operationId` with `api list`, then call it. Prefer a dedicated operation when it matches the requested change.
 
 ## Templates
 
-`wayfront templates pull|push|reset [name]` syncs Twig templates to a local `./templates/` folder you can version-control. See [`templates.md`](templates.md). Template endpoints are a separate surface from the OpenAPI spec, so they may not appear in `wayfront api list`; use the `templates` commands.
+Use these commands when maintaining approved Twig templates in Git. For portal design changes, use the [MCP draft workflow](templates.md#draft-and-preview-a-portal-change) to preview before publishing.
+
+- `wayfront templates pull [name]` downloads templates into `./templates/`. Use the exact name returned by the workspace. For example, `invoices.show` maps to `./templates/invoices/show.twig`.
+- `wayfront templates push [name]` writes live. Supply a name to update one template. An unnamed push uploads every changed local template, including new `custom.*` pages.
+- `wayfront templates reset [name]` removes live overrides. A shipped template reverts to its default and a custom page is deleted. An unnamed reset applies to all modified templates after confirmation.
 
 ## Prerequisite: the API module
 
@@ -90,6 +97,7 @@ These top-level commands don't change. For resource actions, use `--help` and `a
 ```
 wayfront                           Show connection status and help
 wayfront auth login [workspace]    Sign in with OAuth
+wayfront auth token [workspace]    Save an API token
 wayfront auth status               Show the active workspace and auth state
 wayfront auth logout [workspace]   Remove a saved auth session
 wayfront workspace list            List configured workspaces

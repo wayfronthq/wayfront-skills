@@ -4,6 +4,42 @@ This is the mental model an AI needs to set a workspace up well and suggest impr
 
 Wayfront automates the agency lifecycle, sell then deliver then scale, around a few primitives that feed each other. For a flat catalogue of every capability (billing, support, portal, integrations, and so on), see [`features.md`](features.md).
 
+## Workspace Onboarding
+
+Help the owner get their primary service ready for a client to buy and the team to deliver. Ask one or two questions per turn and use the owner's wording for their services.
+
+### Inspect the workspace first
+
+Discover the available actions in [`tools/list`](mcp.md#how-the-tools-are-shaped). Confirm the workspace with `workspace-info`. Inspect the catalog, checkout, and attached forms with `service-read` and `form-read`. If access is limited, explain what you could verify and ask the owner for the missing context.
+
+- **Built from the owner's website or already configured:** Start by reviewing the primary service and its existing forms. Preserve usable services and forms and propose targeted edits.
+- **Sample catalog:** Ask what they sell if the sample offerings do not match their business. Keep any offerings the owner confirms are real. If you are unsure whether the catalog is sample data, ask before proposing replacements.
+- **Empty catalog:** Start with one question about what they sell. Get the billing model and price before proposing the setup. If they have yet to set a price, label any suggested price as a placeholder and get approval before saving it.
+
+### Review one service package with the owner
+
+Choose the buying path that matches how the owner sells. Use an order form for a package clients can buy at a known price. For quote-first work, use a contact form to collect the inquiry and send the invoice once the scope and price are agreed. Create and send manual invoices in Wayfront.
+
+Summarize the service, price, and buying path in plain language. Walk through what happens at each step.
+
+- **At checkout:** Keep it to name, email, service selection, and payment for self-service purchases. Suggest an optional “How did you hear about us?” question if attribution is missing.
+- **For each project:** Use an intake form for the delivery brief, such as goals, pages, or deadlines. Aim for three to six questions and identify any optional extras.
+- **Once per client:** Use an onboarding form for company-level details such as brand assets, default preferences, and requests for account access. Wayfront keeps these answers on the client profile for reuse across that client's orders. Move reusable questions out of project intake.
+- **On each renewal:** Recommend a new order for an independent deliverable each cycle or reopening the same order for a continuing engagement. Where the service sells on-demand requests or only renews billing, review those [renewal options](#services-the-decision-guide) with the owner. Give the reason in one sentence and skip this decision for one-time services.
+- **During delivery:** Put repeatable steps on the service checklist. Agree who owns each step and which steps need client participation, such as approving a deliverable. Add pipelines, notifications, and automations when they solve a specific handoff the owner already needs.
+
+Review the primary service first. Agree with the owner which other services should follow the same pattern. Ask “Does this setup make sense, or would you like to make changes?” Apply only the approved proposal. If the owner requests changes to the proposal, revise it and ask again before writing.
+
+A monthly SEO package with a fresh target list and deliverable each cycle gets a new order. Ask for target pages and priorities on each order, and request analytics access and brand assets once. A website care plan with one continuing backlog reopens the same order so the team keeps the conversation and history together.
+
+### Apply and verify the approved setup
+
+- **New service:** Reuse suitable forms or create the agreed intake and onboarding forms with `form-write`. Use `service-write` to create the service with the approved billing and renewal behavior and attach those forms. Add the returned service ID to the appropriate order form if clients will buy through checkout.
+- **Existing service:** Update the verified service and form IDs. If a form update supplies `fields`, send the complete intended list and retain the IDs of every field you are keeping. Omitted fields are removed. Preserve existing service associations, including the full onboarding form list when changing it. Check active subscriptions before changing renewal behavior because it affects their future renewals.
+- **Verification:** Re-read each changed service and its forms and verify the links. If a multi-step setup fails, inspect what was saved before retrying. If an action is unavailable, give the owner the corresponding step in Wayfront.
+
+Help the owner finish one step at a time. Guide them through connecting Stripe in Wayfront if needed. Verify branding with `settings-read` and apply any approved changes through `settings-write`. If sending from their own domain, follow [workspace email setup](#workspace-email-setup). Before switching to live mode, have them run the chosen buying path in test mode. Check that it produces the expected order, that the client sees the right form, and that staff can see and act on the first delivery step. Keep portal template work for a separately requested, specific design change.
+
 ## The Core Loop
 
 ```
@@ -35,6 +71,12 @@ A pipeline card points at a real record (commonly an order), so moving a card ac
 
 Pipelines can carry **automations**: a trigger event (something happening to a card or its record) fires one or more actions. The available triggers and actions depend on the pipeline type. This is how a board can move work forward on its own rather than purely by hand.
 
+### Deals and Contracts
+
+- **Track a sales opportunity as a deal.** One client can have multiple deals. Use a sales pipeline stage and an owner for each opportunity, log the next follow-up, and keep related messages on the deal. Use **Clients → Sales Inbox** to catch replies awaiting the team. A staff member can create an invoice from the deal when the client is ready. See the [deals guide](https://wayfront.com/help/knowledgebase/deals).
+- **Use a contract when the client should sign before billing or delivery.** From the client profile, use **Actions → Add contract**. Start from a reusable contract template when the terms recur, review the client's terms and any agreed service prices, then send the contract for signature. Sending freezes what the client will sign. Use the form's signature field for standard terms collected during checkout or intake instead.
+- **Choose the action after signing.** Save the signed contract alone when there is no purchase yet. Create an unpaid invoice when the client should pay next or the service is recurring. Create orders directly only for one-time work that should start on signature without an invoice or subscription.
+
 ## Services: the Decision Guide
 
 A service captures how something is sold and delivered. The choices that shape everything downstream:
@@ -47,10 +89,10 @@ A service captures how something is sold and delivered. The choices that shape e
   - **Service requests:** the client subscribes and requests tasks on demand (up to N design requests per month). Each request is its own order.
   - **No action:** nothing to deliver on renewal (hosting).
 - **Intake form.** Attach one if the team needs project details before starting. The order then waits in its initial status until the client fills it.
-- **Tasks.** Define the delivery checklist once. Every order of the service inherits it. Tasks can be internal (team only) or client-facing (visible in the portal, and optionally assigned to the client to complete, like approving a deliverable). A service's reusable checklist is its task template library.
+- **Tasks.** Define the [delivery checklist](#tasks-and-sops) on the service so new orders inherit it.
 - **Variants.** A variant stores selectable option values and a variant price on the service. Clients choose variants from the portal or an order form; services with variants do not have a direct one-click payment link.
 
-To actually create or edit a service, read the current fields from the `ServiceTool`/`services` schema and set the choices above. Don't hard-code field names or option values; they evolve.
+Inspect the existing service with `service-read` and check the current `service-write` schema before applying the approved choices.
 
 ### Service requests are an upsell lever
 Request-based services can be unlimited or capped two ways: a total per billing period, or a number active at a time. The active-at-a-time cap is the better upsell mechanic, because higher tiers allow more concurrent work. When a client hits the cap, the New request action shows a limit-reached notice.
@@ -83,9 +125,17 @@ Orders move through statuses, and **statuses are client-facing**: the client see
 - **Starting status depends on the service:** with an intake form, the order waits until the client submits it; without one, it can start ready-to-work (or skip straight to in-progress, a per-workspace setting).
 - **Due dates** count down from when work can begin (waiting on the client doesn't burn time) and stop at completion. They only appear when the service has a delivery deadline.
 - **Completion handling** is configurable: auto-reopen on a client reply, lock until the client requests a revision, or stay completed. Lock plus auto-reopen together means only orders that truly need input come back.
-- **Tasks** auto-assign sequentially: finishing one unassigns its owners and assigns the next task's owners. Internal tasks stay hidden from the client; client-facing tasks appear in the portal, and the client sees one at a time, only after the preceding team tasks are done.
+- **Tasks** advance the delivery checklist. Use a client task when the client needs to take an action in the portal.
 
 **Tags vs statuses.** Don't confuse the two. For orders and tickets, status is the single client-facing progress state. Client status is a CRM lifecycle label. **Tags are internal labels** (agency only, many per record) for filtering and organizing orders, tickets, and clients. Clients never see tags.
+
+### Tasks and SOPs
+
+Turn the service's standard operating procedure into a reusable checklist. Start with the primary service and add a task for each handoff or checkpoint. Give each task a clear outcome, an owner, and a deadline where helpful. Put short instructions or a link to the SOP in the task description. Keep internal work and quality checks staff-only. Use a client-assigned task when the client needs to approve or provide something. For image feedback and revisions, use [file proofing](https://wayfront.com/help/knowledgebase/file-proofing) on the order.
+
+For example, a content service could run through brief review, drafting, internal quality check, client approval, and delivery. Use **Orders → Tasks** to see the work queue and **Clients → Follow-ups** for sales or relationship reminders. See [Wayfront's guide to documenting delivery SOPs](https://wayfront.com/blog/scaling-productized-services-framework).
+
+Use `service-read` with `get_task_templates` to inspect the checklist. `service-write` with `sync_task_templates` replaces the full list, so retain the IDs of the steps you are keeping and pass task deadlines in hours. Changes apply to new orders. A reopened order keeps its existing checklist and resets task completion. For an existing order, use `order-task-read` and `order-task-write` with its order number. Include `task_id` when completing or reopening a single task because omitting it applies the action to every eligible task on the order.
 
 ## Subscriptions
 
@@ -107,6 +157,14 @@ When a recurring charge fails, Wayfront records the failure, emails the client, 
 - **Saved replies** (canned snippets) speed up repetitive responses, and messages can be scheduled.
 - **Ratings** let clients rate resolved work, giving the agency a CSAT signal.
 - **Followers and notifications** decide who hears about what: staff follow orders they're assigned to (or all new orders), and clients and collaborators get notified on the events that involve them.
+
+### Workspace Email Setup
+
+Start in **Settings → Emails**. Set the sender display name and review the transactional emails clients will receive, such as sign-in links, order and intake updates, invoice notices, and contract emails.
+
+1. **Sending from your own address.** Set up the custom workspace domain first. In email settings, add the sender address and publish the DNS records shown in Wayfront. Wait for verification before expecting messages to use the custom sender. MCP `settings-write` can change the sender display name. Configure the sending address and domain in Wayfront and the DNS provider. See the [workspace domain guide](https://wayfront.com/help/knowledgebase/setup#custom-email-sending-domain).
+2. **Receiving replies.** Forward the custom inbox to the workspace forwarding address shown in email settings. Use a test client and order or ticket to generate a real message notification. Reply from the test client's inbox and check that the reply lands in the original conversation. If the workspace uses Helpdesk, also verify that a new email from the test inbox creates a ticket. See the [email-to-ticket guide](https://wayfront.com/help/knowledgebase/email-to-ticket).
+3. **Editing notifications.** Preview or send a test email from Settings to check the sender, subject, sample variables, and link placement. Use the test client's real notification to verify where a link goes. For Twig changes, follow the [email template workflow](templates.md#edit-an-email-template). See the [email settings guide](https://wayfront.com/help/knowledgebase/emails).
 
 ## Scale
 

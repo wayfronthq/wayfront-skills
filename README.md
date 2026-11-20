@@ -12,16 +12,16 @@ One skill (`wayfront`) with progressive disclosure: `SKILL.md` is the hub, and `
 SKILL.md                  ← entry point: what Wayfront is, surfaces, data model
 reference/mcp.md          ← MCP server: connect, tools, filters, workflows
 reference/cli.md          ← CLI: install, auth, resource commands, API operations
-reference/templates.md    ← portal/email Twig templates: pull/push/reset, naming
-reference/workflows.md    ← how services, forms, orders & billing fit together (+ setup)
-reference/features.md     ← full feature map: billing, support, portal, integrations, more
+reference/templates.md    ← MCP template editing, portal drafts, and previews
+reference/workflows.md    ← setup, sales, delivery, billing, and email
+reference/features.md     ← feature map and where to verify capabilities
 ```
 
 ## Install the skill
 
 Drop this folder into your agent's skills directory so the agent loads `SKILL.md` automatically.
 
-**Claude Code / Claude Desktop**
+**Claude Code**
 ```bash
 # project-scoped (this repo only)
 git clone https://github.com/wayfronthq/wayfront-skills .claude/skills/wayfront
@@ -34,17 +34,15 @@ Other skill-aware tools: place the folder wherever that tool discovers skills (i
 
 ## Connect to your workspace
 
-> Replace `[WORKSPACE]` with your workspace name. If you log in at `acme.wayfront.com`, your workspace is `acme`.
+**MCP** uses `https://mcp.wayfront.com/mcp` for every workspace. Choose your workspace when you sign in. See the [connection guide](reference/mcp.md#connection-setup).
 
-**MCP (Claude Code):**
-```bash
-claude mcp add --transport http wayfront https://[WORKSPACE].wayfront.com/mcp
-```
-The browser opens to authorize on first use. Claude Desktop and other MCP clients: see [`reference/mcp.md`](reference/mcp.md).
+If an approved app is missing a feature you need, see [how to connect directly for more MCP tools](reference/mcp.md#when-an-approved-app-is-missing-a-feature).
+
+Once connected, try “Review my workspace setup before I take my first order” or “Show my open support tickets from this week.”
 
 **CLI:**
 ```bash
 npm install -g wayfront        # or run ad-hoc with: npx wayfront
-wayfront auth login [WORKSPACE]
+wayfront auth login acme    # replace acme with your workspace name
 ```
 Resource commands, generated API operations, and the template workflow: [`reference/cli.md`](reference/cli.md).

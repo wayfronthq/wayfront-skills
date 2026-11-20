@@ -1,130 +1,69 @@
 # Wayfront MCP Server
 
-Connect an AI agent (or any MCP client) to a workspace to query and act on its data, within the permissions of the staff account it connects as. Endpoint:
-`https://[WORKSPACE].wayfront.com/mcp`, Streamable HTTP, OAuth 2.1.
-
-**Two prerequisites:** the **MCP module must be enabled** in the workspace (Settings, Modules), and you must connect as a **staff account**. Client accounts are refused (403); the MCP is a staff/agent surface, not a client one. Until the module is on, connections fail.
+Connect an AI agent over Streamable HTTP with OAuth 2.1. The agent queries and acts within the permissions of the staff account that authorizes the connection.
 
 ## Connection Setup
 
-Wayfront supports OAuth 2.1 with dynamic client registration. Clients that speak MCP OAuth (Claude Code, Claude Desktop, Cursor) authorize automatically. You only need the workspace URL.
+Enable the **MCP module** under **Settings → Modules**. Use **`https://mcp.wayfront.com/mcp`** with **Streamable HTTP**. In the browser, choose the workspace by name or domain, sign in with a staff account, and approve access.
 
 ### Claude Code
+
 ```bash
-claude mcp add --transport http wayfront https://[WORKSPACE].wayfront.com/mcp
-```
-`--transport http` is required. The default transport is stdio, which would try to run a local process and fail. The browser opens to authorize on first tool use.
-
-### Claude Desktop
-1. **Settings, MCP Servers, Add**
-2. Server URL: `https://[WORKSPACE].wayfront.com/mcp`
-3. Authorize in the browser when prompted.
-
-### Any MCP client (Streamable HTTP + OAuth)
-- **Endpoint:** `https://[WORKSPACE].wayfront.com/mcp`
-- **Transport:** Streamable HTTP. Client messages use `POST`; `GET` exists only to return a spec-compliant `405`.
-- **Auth:** OAuth 2.1, discovery via `/.well-known/oauth-authorization-server`, scope `mcp:use`
-
-In JSON config form, declare the transport explicitly:
-```json
-{ "wayfront": { "type": "http", "url": "https://[WORKSPACE].wayfront.com/mcp" } }
+claude mcp add --transport http wayfront https://mcp.wayfront.com/mcp
 ```
 
-### Headless clients
-The tenant MCP authenticates with OAuth (scope `mcp:use`). If a runtime can't complete an interactive browser flow, use a proxy that completes and caches the OAuth session for it. Either way it runs as a staff account, whose permissions decide what each tool can do.
+In Claude Code, run `/mcp`, select Wayfront, and approve the connection in your browser.
 
-(There is a separate internal `/mcp/support` server for Wayfront's own staff that uses token auth and requires a `tenant_id` on every call. It is management-only and IP-restricted. Workspace agents never use it: connect to `/mcp` and do not pass `tenant_id`.)
+### Claude and ChatGPT
+
+Add the Wayfront connector in Claude or the Wayfront app in ChatGPT. Enter your workspace name or domain and approve access. The available tools and response fields can differ by client. See the [Wayfront connection instructions](https://wayfront.com/help/knowledgebase/mcp).
+
+### When an approved app is missing a feature
+
+If your agency needs a tool it doesn't see in an approved app, connect directly to `https://mcp.wayfront.com/mcp` from a compatible client such as Claude Code. Direct workspace MCP can expose a broader tool set. For example, it includes deal management and the workspace-wide follow-up queue, which the Wayfront app in ChatGPT omits. Check `tools/list` after connecting. Your workspace modules and staff permissions still apply.
 
 ## How the Tools Are Shaped
 
-This is a real action surface for AI agents, not just a reporting feed. Agents use it to look things up and to act, within what the connected account is allowed to do. Today many tools are read-only (`list`/`show`) and the set with write actions keeps growing, so check the schema rather than assuming a ceiling. If a change you need is not exposed as a tool action, say that the MCP surface does not currently support it instead of inventing a workaround.
+Read `tools/list` for the connected client's tools and actions.
 
-Tools are named by entity, for example `OrderTool`, `InvoiceTool`, `ServiceTool`, `ClientTool`. The exact set grows over time, so **read `tools/list` for the current tools**. The shape is consistent:
+- `order-read`, `ticket-read`, `client-read`, and `service-read` offer `list` and `show`. Changes use the corresponding `*-write` tool and its supported actions. Use `invoice-tool` and `subscription-tool` to read billing records.
+- Nested tools for order messages, order tasks, and client activities take a parent identifier. Orders and tickets use their string number. Read the schema for the exact identifier field.
+- Use `search-wayfront-docs` for product behavior or setup steps, then `get-wayfront-doc` for the relevant full document. Use the workspace tools to verify the workspace's records and configuration.
 
-- Most tools expose `list` (query) and `show` (one record).
-- A growing number also expose writes (`create`, `update`, and similar). Don't assume a tool is read-only; check its schema for write actions.
-- Nested tools (an order's messages, an order's tasks, a client's activity) take a parent identifier.
-- Each tool's schema declares its actions, its id parameter, its filterable and sortable fields, and its status code map. Treat `tools/list` as the capability surface, not an authorization contract: permission, ownership, module, and policy checks run when you call, so an action visible in the schema can still be refused at call time.
+## Permissions and Access
 
-**Do not assume actions, fields, statuses, or permissions from memory.** They change, and several are customized per workspace. The schema is the source of truth for shape; the call result is the source of truth for what you're allowed to do.
+The schema describes available actions. Permissions, record visibility, modules, and workspace state determine whether each call succeeds. Use `workspace-info` if the workspace, staff role, or capability is unclear. For a dedicated agent, authorize it with a staff account scoped to the work it needs to do.
 
-## Permissions & Access Control
-
-The MCP acts as the staff account that authorized the connection, and inherits exactly that account's role and permissions. An admin account can do everything; a limited role can only use the tools and actions its permissions allow (a tool returns a permission error otherwise). Only staff can connect at all: a client account is refused at the door.
-
-So you control an AI agent by controlling the account it connects as:
-
-- **Create a dedicated staff account for the agent** and give it a role scoped to just what it should do. Connect the agent as that account rather than as a human admin.
-- **Widen or narrow the role** to change the agent's reach. Removing a permission removes the matching tool actions; granting one adds them.
-- **Revoke the account** (or its session) to cut the agent off entirely.
-
-This also keeps the audit trail clean: actions are attributed to the agent's account, not to a person.
+If access is denied, check the workspace and role, then check the module and record scope before asking a workspace admin about access. An empty result means no visible record matched the query.
 
 ## Reading: Filter, Sort, Paginate
 
-`list` accepts `filters`, `sort`, `limit`, and `page`.
-
-### Filters
-Keys are field names from the tool's schema, values are operator objects. Common operators (the full set is larger and can change, so confirm against the live operator list):
-
-| Operator | Meaning |
-|---|---|
-| `$eq` / `$ne` | equals / not equals |
-| `$lt` `$gt` `$lte` `$gte` | comparisons |
-| `$in` / `$notIn` | in / not in a list |
-| `$contains` / `$notContains` | substring |
-| `$startsWith` / `$endsWith` | prefix / suffix |
-| `$null` / `$notNull` | null checks |
-| `$between` | range |
-| `$and` / `$or` | compound groups |
+Most list actions accept `filters`, `sort`, `limit`, and `page`. Use the exact fields and operators in the tool schema. For example, to inspect services with “Monitoring” in the name, call `service-read` with:
 
 ```json
-{"filters": {"$and": [{"<field>": {"$eq": "<value>"}}, {"<date_field>": {"$lt": "<iso>"}}]}}
+{
+  "action": "list",
+  "filters": {"name": {"$contains": "Monitoring"}},
+  "limit": 20
+}
 ```
 
-Case-sensitive variants and relation filters also exist. Confirm the live operator and field set in the schema. **Field names are model-specific and not guessable**, so list a record first or read the schema before filtering.
+Common filter operators include `$eq` and `$ne` for equality, `$in` and `$notIn` for membership, comparison operators such as `$gte`, and `$null` for missing values. The schema also identifies any supported compound filters.
 
-### Status filters take the numeric code
-Status is an integer, not a label. Filter with the code (`{"<status_field>": {"$eq": <code>}}`), never the name. The code-to-label map is printed in the tool's `filters` description and is customizable per workspace. Read it there.
+Order, ticket, and client status codes can vary by workspace. Use the numeric values in each tool's filter schema. Deals use string statuses such as `open`, `won`, and `lost`.
 
-### Sort and pagination
-`sort` is an array of fields with optional `:asc` or `:desc` (default `:asc`), e.g. `["created_at:desc"]`. Pagination is `limit` and `page`; the response carries `pagination.{current_page,last_page,per_page,total}`. Iterate while `current_page < last_page`.
+Sort is an array such as `["created_at:desc"]`. Use the response's pagination and continue while `current_page < last_page` when the user asks for all matching records. Otherwise, report the scope or limit you used. Call `show` for records that need detail.
 
-## Working Pattern
+## Applying Changes
 
-The reliable loop for any task:
+Verify the target and get approval for consequential changes. Messages and order changes can notify clients or trigger integrations. Use the exact action from the write tool's schema.
 
-1. `tools/list` to pick the right entity tool and confirm its actions.
-2. Read that tool's schema for the id parameter, fields, and status map.
-3. `list` with a filter to find records (and to discover identifiers you don't have).
-4. `show` for detail, or a write action if the tool supports one and you have permission.
-5. If the MCP does not expose the needed change, report that limitation and stop unless the user explicitly asks to use another surface.
+Preserve existing values in fields documented as full replacements. Re-read the affected records after a write. If the result is ambiguous or a step fails partway through, check what was saved before retrying. If the connection lacks the action, explain the limitation and give the relevant step in Wayfront.
 
-Identifiers: most tools take a numeric id, but orders and tickets take their string `number`. Nested tools take the parent's identifier. The schema names the exact parameter.
+### Create an order for a client
 
-## Error Handling
+Use `order-read` with `create_options` to verify the selected client, service, request entitlement, and intake fields before calling `order-write` with `create`. If the request came from a helpdesk ticket, pass its `ticket_number` to link it. When a request entitlement is ineligible, tell the user why and get approval before considering a standalone order. Use client-provided answers for intake fields the client can see. If the create result is unclear, look up the order before retrying.
 
-| Error | Meaning | Action |
-|---|---|---|
-| not found | record missing or out of scope | verify the id/number, `list` with a strict filter first |
-| unsupported field | filtered or sorted on a field not in the schema | use only fields the schema lists |
-| permission error | the staff role lacks the tool's permission | enable that permission in Wayfront settings |
-| action not available | a write was attempted where unsupported | check the schema; report that the MCP tool does not expose that action |
-| empty `data: []` | no matching records | loosen filters or confirm data exists |
+For service and form changes, follow the [workspace onboarding workflow](workflows.md#workspace-onboarding). For approved portal design changes, follow the [template draft workflow](templates.md#draft-and-preview-a-portal-change).
 
-Results are scoped to what the connected staff account's role allows.
-
-## Efficiency
-
-- No published hard rate limit, but avoid tight loops of hundreds of sequential calls.
-- Raise the page limit and paginate rather than fetching one record at a time.
-- For bulk questions ("all clients with unpaid invoices"), use one filtered `list`.
-- Fetch a parent once, then query its children by its identifier.
-
-## Tips
-
-- The MCP is a working surface for agents, not just reporting. It can act wherever the connected account has the permission and the tool exposes the action; if it does not expose an action, do not assume another surface should be used automatically.
-- Scope an agent by connecting it as a dedicated staff account with a limited role (see Permissions & Access Control).
-- Status is always a number. Read the live code map from the tool description.
-- `is_modified: true` on a template means it was customised away from its default (see `templates.md`).
-- The log and activity tools are the audit trail: what happened and when.
+For sales opportunities, use `deal-read` and `deal-write` when they appear in the connected client's tool list. Create and send contracts from the client's profile in Wayfront. See [deals and contracts](workflows.md#deals-and-contracts).

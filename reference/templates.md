@@ -1,71 +1,41 @@
 # Wayfront Templates
 
-Templates are the **Twig** files that render the client portal and outgoing emails. Each one has a filesystem **default** shipped with Wayfront, and a workspace can **override** any of them in the database. An override with custom content reports `is_modified: true`. Resetting a template deletes the override and falls back to the default.
+Use the workspace MCP tools to read Twig templates, preview portal changes in a draft, and update approved email templates. Check `tools/list` for your client's available actions.
 
-## Naming
+## Choose the right control
 
-Templates use **dot-notation** that maps to folders, with a `.twig` extension:
+Use branding, menu, dashboard, and language settings for changes those controls support. Branding, dashboard, and menu writes save live. General workspace setup can proceed through those controls and the service and form tools. Use Twig when the owner asks for a specific portal design change, custom page, or email template change.
 
-```
-invoices.show          ->  ./templates/invoices/show.twig
-public.order_form      ->  ./templates/public/order_form.twig
-email.client_receipt   ->  ./templates/email/client_receipt.twig
-custom.welcome         ->  ./templates/custom/welcome.twig
-```
+## Draft and Preview a Portal Change
 
-Common namespaces (use `name_prefix` to scope a search):
+1. On the latest portal design, call `portal-customization-read` with `list` to find editable drafts. Reuse the intended draft or call `portal-customization-write` with `create` when a new one is needed.
+2. Read the live source with `template-read` and `show`. If the draft already has a staged version, read it with `portal-customization-read` and `show`. For a visual-only change, put scoped CSS in `portal.public.custom_scripts` and preserve unrelated scripts and styles. For a new page, use a `custom.` name.
+3. Stage the full Twig source with `portal-customization-write` and `update_template`. Pass the current `draft_id`, `revision`, and `template_name`. Verify the change at `preview_url` or the custom page's direct preview link.
+4. Share the preview with the intended reviewer. Anyone with the link can view it while valid using a sample client with actions disabled. The draft expires after seven days.
+5. Use `publish` only after the user explicitly approves the live change. If the revision or live source changed, read the latest state before proceeding. Publish a custom page before adding a live menu link to it.
+
+Use `undo` to revert an unpublished edit or `discard` to remove an unwanted draft. Both use `portal-customization-write`.
+
+## Edit an Email Template
+
+1. Confirm the workspace has a verified custom sending domain and template access. See [workspace email setup](workflows.md#workspace-email-setup).
+2. Find the notification with `template-read` and read its full source with `show`. Keep the intended variables, links, and surrounding markup.
+3. Apply an approved change with `template-write` and `update`. This replaces the full source and saves live. Use the notification's preview or test email in **Settings → Emails** to check rendering and links.
+
+Use `template-write` with `reset` only when the user approves removing a live override. Shipped templates fall back to their defaults. Resetting a custom page deletes it.
+
+## Find the Template Name
+
+Use the name returned by `template-read`. List by prefix or search, then call `show` for the full Twig source. `is_modified` identifies a workspace override.
 
 | Prefix | Renders |
 |---|---|
-| `orders.*`, `invoices.*`, `subscriptions.*`, `tickets.*`, `team.*`, `public.*`, `layouts.*` | New portal pages exposed by the API/CLI. The underlying database override may store these with a `portal.` prefix. |
+| `portal.*` | Portal pages such as `portal.invoices.show` and shared files such as `portal.public.custom_scripts`. Some surfaces return these without the `portal.` prefix. |
 | `clients.*` | Legacy client portal pages |
-| `email.*` | Transactional emails (e.g. `email.client_receipt`) |
-| `payments.*`, `plugins.*` | Checkout/payment screens and plugin views |
-| `custom.*` | Brand-new templates you author (see "Creating new templates") |
+| `email.*` | Transactional emails |
+| `payments.*`, `plugins.*` | Checkout and plugin views |
+| `custom.*` | Custom pages |
 
-The authoritative list is whatever the workspace returns. Pull them or query `TemplateTool` rather than assuming.
+Keep existing template variables intact and check the original source before using a variable on another page. Public pages and emails receive different variables from signed-in portal pages. Test the affected portal views in the draft before publishing.
 
-## CLI Workflow (recommended for editing)
-
-```bash
-wayfront templates pull              # download all templates to ./templates/
-wayfront templates pull invoices.show # or just one
-
-# ...edit the .twig files locally, commit them to git...
-
-wayfront templates push              # push only changed templates
-wayfront templates push invoices.show
-wayfront templates reset invoices.show # discard override, revert to default (then pull to refresh local copy)
-```
-
-- `./templates/` is yours to version-control. Pull once, edit over time, push when ready.
-- `push` (no name) compares local files against the remote and uploads only the diffs. A brand-new file is created, an existing one is updated.
-- `reset` (no name) lists every modified template and, on confirmation, reverts them all to default.
-- Requires the `settings_templates` permission and template access on the workspace.
-
-## Editing vs. creating
-
-- **Editing a shipped template** (anything under `orders.*`, `invoices.*`, `email.*`, etc.): `pull`, edit, `push`. The push updates the DB override.
-- **Creating a new template**: the name must start with `custom.` (e.g. `custom.welcome`). Creating a non-`custom.` name that has no shipped default is rejected by the API.
-- **Resetting** only works on templates that have a DB override. Calling reset on a filesystem-only default (one that was never modified) returns a 404; there is nothing to revert.
-
-## Read & write via MCP / API
-
-- **MCP `TemplateTool`** is read-only: `list` (filter by name prefix like `"email."`/`"invoices."`, or search a name/content substring) and `show` by name. It surfaces both DB overrides and filesystem defaults; `is_modified` flags the customised ones. To write templates, use the CLI.
-- The CLI wraps a small template REST surface (read, update, create, reset). These endpoints are separate from the public OpenAPI spec, so they won't show in `wayfront api list`. Use the `templates` commands rather than calling them by hand.
-
-## Authoring Conventions
-
-- **Twig `if`:** always write `{% if (condition) %}` with a space after `if`, never `{% if(condition) %}`.
-- **New-design tenants** use the portal view set. The API/CLI usually expose these names without `portal.` (for example `invoices.show`), while some stored DB overrides include the `portal.` prefix. Prefer the new portal templates over legacy `clients.*` templates when both exist.
-- Keep existing template variables intact. A template receives a fixed context from the renderer, so inventing variable names won't populate them. When unsure what's available, start from the pulled default and modify it rather than writing from scratch.
-- On logged-in portal pages, `user` is available. Public pages and email templates only have the variables their renderer passes, so inspect the pulled default before assuming a variable exists.
-- To inspect an object's available properties while developing, temporarily render it as JSON: `<pre>{{ user|json_encode|raw }}</pre>` (or `order`, `invoice`, `ticket`, etc.). Remove debug output before pushing.
-- Don't add margin or spacing to containers that may render empty.
-- Format and lint before pushing if your editor supports Twig or Prettier.
-
-## Tips
-
-- Diff first: `wayfront templates pull` into a clean git tree, edit, and review the diff before `push`.
-- To experiment safely, copy the default, change one thing, push, verify in the portal, iterate.
-- If a push fails with a permission error, the staff role behind your session lacks `settings_templates`.
+For Git-based synchronization of live templates, see the [CLI reference](cli.md#templates).
